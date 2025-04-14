@@ -1,1 +1,39 @@
+from flask import Flask, render_template, request
+import pandas as pd
+import matplotlib.pyplot as plt
+import os
+
+app = Flask(__name__)
+
+@app.route("/", methods=["GET", "POST"])
+def index():
+    df = pd.read_csv("covid_data.csv")
+    countries = sorted(df['country'].unique())
+    selected_country = None
+    chart = None
+
+    if request.method == "POST":
+        selected_country = request.form.get("country")
+        filtered = df[df['country'] == selected_country]
+
+        # Generate chart
+        plt.figure(figsize=(6, 4))
+        plt.plot(filtered['date'], filtered['cases'], marker='o', color='blue')
+        plt.title(f"COVID-19 Cases in {selected_country}")
+        plt.xlabel("Date")
+        plt.ylabel("Cases")
+        plt.grid(True)
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+
+        # Save chart
+        chart_path = os.path.join("static", "chart.png")
+        plt.savefig(chart_path)
+        plt.close()
+        chart = chart_path
+
+    return render_template("index.html", countries=countries, chart=chart, selected_country=selected_country)
+
+if __name__ == "__main__":
+    app.run(debug=True)
 
